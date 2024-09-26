@@ -9,26 +9,46 @@ public class Git{
     public static void initGitRepo () {
         int pathExistsCounter=0;
         //Creates the "git" directory
-        try {
-            Files.createDirectory(Paths.get("git"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            pathExistsCounter++;
+        File git = new File ("git");
+        if (!git.exists()){
+            try {
+                Files.createDirectory(Paths.get("git"));
+            } catch (IOException e) {
+                e.printStackTrace();
+                pathExistsCounter++;
+            }
+        }
+        else{
+            System.out.println ("git directory already exists.");
         }
         //Creates the "objects" directory inside in "git" directory
-        try {
-            Files.createDirectory(Paths.get("git/objects"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            pathExistsCounter++;
+        File objects = new File ("git/objects");
+        if (!objects.exists()){
+            try {
+                Files.createDirectory(Paths.get("git/objects"));
+            } catch (IOException e) {
+                e.printStackTrace();
+                pathExistsCounter++;
+            }
         }
+        else{
+            System.out.println ("objects directory already exists.");
+        }
+
         //Creates the "index" file in the "git" folder
-        try {
-            Files.createFile(Paths.get("git/index"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            pathExistsCounter++;
+        File index = new File ("git/index");
+        if (!index.exists()){
+            try {
+                Files.createFile(Paths.get("git/index"));
+            } catch (IOException e) {
+                e.printStackTrace();
+                pathExistsCounter++;
+            }
         }
+        else{
+            System.out.println ("index file already exists.");
+        }
+
         //Prints custom message if all paths already exist
         if (pathExistsCounter>=3) {
             System.out.println("Git Repository already exists");

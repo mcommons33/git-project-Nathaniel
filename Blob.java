@@ -10,16 +10,22 @@ public class Blob {
     //Global variable to toggle compression on or off
     private static boolean compressionEnabled = false;
     
+    //backs up a directory via making its tree given its path
     public static void createTree (String directoryPath) throws IOException, NoSuchAlgorithmException, ObjectsDirectoryNotFoundException{
         File direct = new File (directoryPath);
+
+        //checks if the directory exists
         if (!direct.exists()){
             throw new FileNotFoundException("Directory path does not exist.");
         }
+
         // Check if it's a directory
         if (!direct.isDirectory()) {
             throw new IOException("Path is not a directory: " + directoryPath);
         }
+
         try{
+            //creates list of subfiles/folders and String for the tree of the directory
             File [] directoryList = direct.listFiles();
             StringBuilder tree = new StringBuilder();
 
@@ -29,12 +35,10 @@ public class Blob {
                 tree.append("empty directory\n");  // Special marker for an empty directory
             }
 
-            
-
-            //recursively goes through directory
+            //goes through the directory
             for (int i=0; i<directoryList.length;i++){
+                //creates the current path for naming reasons
                 String pathAt = "";
-                //creates the current path
                 if (directoryList[i].getParent()==null){
                     pathAt = directoryList[i].getName();
                 }
@@ -43,34 +47,42 @@ public class Blob {
                 }
 
                 if (directoryList[i].isDirectory()){
-                    //recursively goes through this directory
+                    //recursively goes through this directory (depth first search)
                     createTree (directoryList[i].getPath());
-                    //new entry into the tree
+                    //new entry into the tree string
                     tree.append("tree " + generateSha1(directoryList[i].getPath()) + " " + pathAt + "\n");
                 }
                 else{
                     File newFile = directoryList[i];
-                    String fileName = newFile.getPath();
+                    String fileContent = new String (Files.readAllBytes(Paths.get(pathAt)));
                 
                     //new entry into the tree file
-                    tree.append("blob "+ generateSha1(fileName) + " " + pathAt + "\n");
+                    tree.append("blob "+ generateSha1(fileContent) + " " + pathAt + "\n");
 
-                    //creates a new blob
+                    //creates a new blob of the file
                     createBlob(pathAt);
                 }
             }
 
-            //creates a tree file for the outermost directory
+            //creates a blob for the tree string by basically rewriting 
             String name = direct.getName();
-            File treeFile = new File ("git/"+name);
-            if (!treeFile.exists()){
-                treeFile.createNewFile();
+            String shaOfTree = generateSha1(tree.toString());
+            //Checks if the objects directory exists
+            if (!Files.exists(Paths.get("git/objects"))) {
+                throw new ObjectsDirectoryNotFoundException("Objects directory does not exist. Please initialize the repository");
             }
-            BufferedWriter bw2 = Files.newBufferedWriter(Paths.get(treeFile.getPath()));
-            bw2.write(tree.toString());
-            bw2.close();
-            createBlob(treeFile.getPath());
-            treeFile.delete();
+
+            //Reads the tree content and writes it into the blob
+            Files.write(Paths.get("git/objects", shaOfTree), tree.toString().getBytes());
+            
+            //Writes a new line into the index
+            String fileName = Paths.get(directoryPath).getFileName().toString();
+            String indexEntry = "";
+            indexEntry = "tree " + shaOfTree + " " + directoryPath + "\n";
+            
+            BufferedWriter bw = new BufferedWriter(new FileWriter("git/index", true));
+            bw.append (indexEntry);
+            bw.close();
 
         }
         catch (IOException e) {
@@ -187,6 +199,7 @@ public class Blob {
             e.printStackTrace();
         }
 
+        //creates directory with subfiles and folders
         File newDirectory = new File ("direct");
         if (!newDirectory.exists()){
             newDirectory.mkdir();
@@ -201,13 +214,29 @@ public class Blob {
         if (!newDirectory2.exists()){
             newDirectory2.mkdir();
         }
+        File newFile2 = new File ("direct/direct2/newFile2.txt");
+        StringBuilder sb3 = new StringBuilder("aoeunvoacwnv");
+        Files.write(Paths.get("direct/direct2/newFile2.txt"), sb3.toString().getBytes(StandardCharsets.UTF_8));
+        if (!newFile2.exists()){
+            newFile2.createNewFile();
+        }
+
+        //creates a tree from the top directory
         createTree("direct");
 
+        //checks the index entry
         BufferedReader br = Files.newBufferedReader(Paths.get("git/index"));
         br.readLine();
         if (br.readLine().equals("blob " + generateSha1("aoeunvoacwn") + " direct/newFile.txt")){
-            System.out.println ("index is correctly updated with tree.");
+            if (br.readLine().equals("blob " + generateSha1("aoeunvoacwnv") + " direct/direct2/newFile2.txt")){
+                if (br.readLine().equals("tree 76617d2c07b3662a10b6815823eb87c40d06bc16 direct/direct2")){
+                    if (br.readLine().equals("tree 91db97839ff6b11ddb0498577aa074b24315a9bf direct")){
+                        System.out.println ("index is correctly updated with tree.");
+                    }
+                }
+            }    
         }
+        br.close();
     }
 
     // Removes test files: example.txt, the corresponding blob, and the index entry

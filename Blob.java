@@ -205,10 +205,14 @@ public class Blob {
             newDirectory.mkdir();
         }
         File newFile = new File ("direct/newFile.txt");
+        File emptDir = new File ("direct/directEmpt");
         StringBuilder sb2 = new StringBuilder("aoeunvoacwn");
         Files.write(Paths.get("direct/newFile.txt"), sb2.toString().getBytes(StandardCharsets.UTF_8));
         if (!newFile.exists()){
             newFile.createNewFile();
+        }
+        if (!emptDir.exists()){
+            emptDir.mkdir();
         }
         File newDirectory2 = new File ("direct/direct2");
         if (!newDirectory2.exists()){
@@ -237,6 +241,7 @@ public class Blob {
             }    
         }
         br.close();
+        resetTestFiles();
     }
 
     // Removes test files: example.txt, the corresponding blob, and the index entry

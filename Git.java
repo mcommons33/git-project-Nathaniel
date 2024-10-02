@@ -54,7 +54,14 @@ public class Git{
             System.out.println("Git Repository already exists");
         }
     }
+    public static void commit (String author, String message) throws IOException{
+        String hashOfCommit;
+        Path pathOfCommit = Paths.get("./git/objects" + hashOfCommit);
+        Files.createFile(pathOfCommit);
+    }
+    public static void stage (String filePath){
 
+    }
     //Tests main methods
     private static void testRepoInit() {
         //Testing file creation

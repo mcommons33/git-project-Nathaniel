@@ -1,6 +1,9 @@
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDate;
+import java.nio.charset.StandardCharsets;
 public class Git{
     public static void main (String [] args){
         testRepoInit();
@@ -49,15 +52,38 @@ public class Git{
             System.out.println ("index file already exists.");
         }
 
+        //Created the "HEAD" file in the "git" folder
+        File HEAD = new File ("git/HEAD");
+        if (!HEAD.exists()){
+            try {
+                Files.createFile(Paths.get(HEAD.getPath()));
+            } catch (IOException e) {
+                e.printStackTrace();
+                pathExistsCounter++;
+            }
+        }
+        else{
+            System.out.println ("HEAD file already exists.");
+        }
+
         //Prints custom message if all paths already exist
-        if (pathExistsCounter>=3) {
+        if (pathExistsCounter>=4) {
             System.out.println("Git Repository already exists");
         }
     }
-    public static void commit (String author, String message) throws IOException{
-        String hashOfCommit;
-        Path pathOfCommit = Paths.get("./git/objects" + hashOfCommit);
-        Files.createFile(pathOfCommit);
+    public static void commit (String author, String message) throws IOException, NoSuchAlgorithmException, ObjectsDirectoryNotFoundException{
+        String hashOfCommit, hashOfCurrentTree, hashOfLastCommit;
+        StringBuilder commitData = new StringBuilder();
+        File head = new File ("./git/HEAD");
+        hashOfLastCommit = new String (Blob.readFileContent(head.getPath()), StandardCharsets.UTF_8);
+        hashOfCurrentTree = Blob.generateSha1(Blob.createTree("./direct"));
+        //making commit file data
+        commitData.append("tree: " + hashOfCurrentTree + "\nparent: " + hashOfLastCommit + "\nauthor: " 
+        + author + "\ndate: " + LocalDate.now() + "\nmessage: " + message);
+     
+        // backing up the commit file in the objects folder
+        hashOfCommit = Blob.generateSha1(commitData.toString());
+        Files.createFile(Paths.get("./git/objects" + hashOfCommit));
     }
     public static void stage (String filePath){
 

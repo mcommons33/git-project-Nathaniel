@@ -10,7 +10,7 @@ public class Blob {
     //Global variable to toggle compression on or off
     private static boolean compressionEnabled = false;
     
-    //backs up a directory via making its tree given its path
+    //backs up a directory via making its tree given its path and returns the tree file
     public static String createTree (String directoryPath) throws IOException, NoSuchAlgorithmException, ObjectsDirectoryNotFoundException{
         File direct = new File (directoryPath);
 
@@ -44,7 +44,10 @@ public class Blob {
                     //recursively goes through this directory (depth first search)
                     createTree (directoryList[i].getPath());
                     //new entry into the tree string
-                    tree.append("tree " + generateSha1(directoryList[i].getPath()) + " " + pathAt + "\n");
+                    
+
+                    //existing bug *DISREGARD*
+                    tree.append("tree " + generateSha1(createTree(directoryList[i].getPath())) + " " + pathAt + "\n");
                 }
                 else{
                     String fileContent = new String (Files.readAllBytes(Paths.get(directoryList[i].getPath())));
@@ -84,6 +87,7 @@ public class Blob {
 
     //Generates a unique filename using SHA1 hash of file data
     public static String generateSha1(String data) throws IOException, NoSuchAlgorithmException {
+        if 
         //Creates SHA1 hash from the file content
         MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
         byte[] hashBytes = sha1.digest(data.getBytes());

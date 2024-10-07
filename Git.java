@@ -75,17 +75,58 @@ public class Git{
         String hashOfCommit, hashOfCurrentTree, hashOfLastCommit;
         StringBuilder commitData = new StringBuilder();
         File head = new File ("./git/HEAD");
-        hashOfLastCommit = new String (Blob.readFileContent(head.getPath()), StandardCharsets.UTF_8);
-        hashOfCurrentTree = Blob.generateSha1(Blob.createTree("./direct"));
+        hashOfLastCommit = new String (Blob.readFileContent(head.getPath()), StandardCharsets.UTF_8); //grabbing hash of last commit from head file
+        //getting the hash of the current tree; adding index file data to previous index file data
+        BufferedReader cr = new BufferedReader(new FileReader("./git/objects/" + hashOfLastCommit));
+        String treeOfPreviousCommit = cr.readLine().split(" ")[1];
+        cr.close();
+        StringBuilder snapShot = new StringBuilder();
+        if(!treeOfPreviousCommit.equals("")){
+            BufferedReader tr = new BufferedReader(new FileReader ("./git/objects/" + treeOfPreviousCommit));
+            while (tr.ready()){
+                snapShot.append(tr.readLine());
+            }
+            tr.close();
+        }
+        BufferedReader ir = new BufferedReader(new FileReader("./git/index"));
+        while (ir.ready()){
+            snapShot.append(ir.readLine());
+        }
+        ir.close();
+        hashOfCurrentTree = Blob.generateSha1(snapShot.toString());
+        
         //making commit file data
         commitData.append("tree: " + hashOfCurrentTree + "\nparent: " + hashOfLastCommit + "\nauthor: " 
         + author + "\ndate: " + LocalDate.now() + "\nmessage: " + message);
      
         // backing up the commit file in the objects folder
         hashOfCommit = Blob.generateSha1(commitData.toString());
-        Files.createFile(Paths.get("./git/objects" + hashOfCommit));
+        File thisCommit = new File ("./git/objects" + hashOfCommit);
+        thisCommit.createNewFile();
+        BufferedWriter bw = new BufferedWriter(new FileWriter (thisCommit));
+        bw.write(commitData.toString());
+        bw.close();
+
+        //updating head file
+        BufferedWriter br = new BufferedWriter(new FileWriter("./git/HEAD"));
+        br.write(hashOfCommit);
+
+        //clearing index file
+        File index = new File ("./git/index");
+        index.delete();
+        index.createNewFile();
     }
-    public static void stage (String filePath){
+  
+    //question for theiss, what does the first commit file data look like, and subsequent ones; how do i get the current tree file
+    
+    //Prepares a file to 
+    public static void stage (String filePath) throws NoSuchAlgorithmException, IOException, ObjectsDirectoryNotFoundException{
+        File fileToStage = new File (filePath);
+        if (!fileToStage.exists())
+            throw new FileNotFoundException();
+        if (fileToStage.isDirectory()){
+
+        }
 
     }
     //Tests main methods

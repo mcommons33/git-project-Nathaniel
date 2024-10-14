@@ -4,11 +4,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.nio.charset.StandardCharsets;
-public class Git{
-    public static void main (String [] args){
-        testRepoInit();
-    }
-
+public class Git implements GitInterface{
     public static void initGitRepo () {
         int pathExistsCounter=0;
         //Creates the "git" directory
@@ -71,37 +67,44 @@ public class Git{
             System.out.println("Git Repository already exists");
         }
     }
-    public static void commit (String author, String message) throws IOException, NoSuchAlgorithmException, ObjectsDirectoryNotFoundException{
+    public String commit (String author, String message) throws IOException, NoSuchAlgorithmException{
         String hashOfCommit, hashOfCurrentTree, hashOfLastCommit;
         StringBuilder commitData = new StringBuilder();
         File head = new File ("./git/HEAD");
         hashOfLastCommit = new String (Blob.readFileContent(head.getPath()), StandardCharsets.UTF_8); //grabbing hash of last commit from head file
         //getting the hash of the current tree; adding index file data to previous index file data
-        BufferedReader cr = new BufferedReader(new FileReader("./git/objects/" + hashOfLastCommit));
-        String treeOfPreviousCommit = cr.readLine().split(" ")[1];
-        cr.close();
         StringBuilder snapShot = new StringBuilder();
-        if(!treeOfPreviousCommit.equals("")){
-            BufferedReader tr = new BufferedReader(new FileReader ("./git/objects/" + treeOfPreviousCommit));
-            while (tr.ready()){
-                snapShot.append(tr.readLine());
+        if (!hashOfLastCommit.equals("")){
+            BufferedReader cr = new BufferedReader(new FileReader("./git/objects/" + hashOfLastCommit));
+            String treeOfPreviousCommit = cr.readLine().split(" ")[1];
+            cr.close();
+            if(!treeOfPreviousCommit.equals("")){
+                BufferedReader tr = new BufferedReader(new FileReader ("./git/objects/" + treeOfPreviousCommit));
+                while (tr.ready()){
+                    snapShot.append(tr.readLine() + "\n");
+                }
+                tr.close();
             }
-            tr.close();
         }
         BufferedReader ir = new BufferedReader(new FileReader("./git/index"));
         while (ir.ready()){
-            snapShot.append(ir.readLine());
+            snapShot.append(ir.readLine() + "\n");
         }
         ir.close();
         hashOfCurrentTree = Blob.generateSha1(snapShot.toString());
-        
+        File thisTreeFile = new File ("./git/objects/" + hashOfCurrentTree);
+        thisTreeFile.createNewFile();
+        BufferedWriter bww = new BufferedWriter(new FileWriter (thisTreeFile));
+        bww.write(snapShot.toString());
+        bww.close();
+
         //making commit file data
         commitData.append("tree: " + hashOfCurrentTree + "\nparent: " + hashOfLastCommit + "\nauthor: " 
         + author + "\ndate: " + LocalDate.now() + "\nmessage: " + message);
      
         // backing up the commit file in the objects folder
         hashOfCommit = Blob.generateSha1(commitData.toString());
-        File thisCommit = new File ("./git/objects" + hashOfCommit);
+        File thisCommit = new File ("./git/objects/" + hashOfCommit);
         thisCommit.createNewFile();
         BufferedWriter bw = new BufferedWriter(new FileWriter (thisCommit));
         bw.write(commitData.toString());
@@ -110,25 +113,31 @@ public class Git{
         //updating head file
         BufferedWriter br = new BufferedWriter(new FileWriter("./git/HEAD"));
         br.write(hashOfCommit);
+        br.close();
 
         //clearing index file
         File index = new File ("./git/index");
         index.delete();
         index.createNewFile();
-    }
-  
-    //question for theiss, what does the first commit file data look like, and subsequent ones; how do i get the current tree file
-    
+
+        //returning hash of new commit
+        return hashOfCommit;
+    }    
     //Prepares a file to 
-    public static void stage (String filePath) throws NoSuchAlgorithmException, IOException, ObjectsDirectoryNotFoundException{
+    public void stage (String filePath) throws NoSuchAlgorithmException, IOException, ObjectsDirectoryNotFoundException{
         File fileToStage = new File (filePath);
         if (!fileToStage.exists())
-            throw new FileNotFoundException();
-        if (fileToStage.isDirectory()){
-
-        }
-
+            fileToStage.createNewFile();
+        if (fileToStage.isDirectory())
+            Blob.createTree(filePath);
+        else
+            Blob.createBlob(filePath);
     }
+
+    public void checkout (String commitHash){
+        
+    }
+
     //Tests main methods
     private static void testRepoInit() {
         //Testing file creation
@@ -145,7 +154,19 @@ public class Git{
     private static boolean doesPathExist (String path) {
         return Files.exists(Paths.get(path));
     }
-
+    private static void resetTestFiles (String filePath) throws IOException{
+        File git = new File (filePath);
+        File [] files = git.listFiles();
+        for (File f : files){
+            if (!f.isDirectory())
+                f.delete();
+            else{
+                resetTestFiles(f.getPath());
+                f.delete();
+            }
+        }
+        initGitRepo();
+    }
     //Deletes chosen path, returns true if path deleted, false if path did not exist
     private static boolean deletePath(String path) {
         try {

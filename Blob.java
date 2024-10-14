@@ -46,7 +46,7 @@ public class Blob {
                     //new entry into the tree string
                     
 
-                    //existing bug *DISREGARD*
+                    //existing bug ************************************************************DISREGARD******************************************************************
                     tree.append("tree " + generateSha1(createTree(directoryList[i].getPath())) + " " + pathAt + "\n");
                 }
                 else{
@@ -87,7 +87,6 @@ public class Blob {
 
     //Generates a unique filename using SHA1 hash of file data
     public static String generateSha1(String data) throws IOException, NoSuchAlgorithmException {
-        if 
         //Creates SHA1 hash from the file content
         MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
         byte[] hashBytes = sha1.digest(data.getBytes());

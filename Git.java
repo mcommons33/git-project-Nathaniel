@@ -4,7 +4,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.nio.charset.StandardCharsets;
-public class Git implements GitInterface{
+public class Git {
     public static void initGitRepo () {
         int pathExistsCounter=0;
         //Creates the "git" directory
@@ -134,10 +134,59 @@ public class Git implements GitInterface{
             Blob.createBlob(filePath);
     }
 
-    public void checkout (String commitHash){
-        
+    public void checkout (String commitHash) throws IOException{
+        //deleting all current files besides git
+        File current = new File (".");
+        File [] currentFiles = current.listFiles();
+        for (File f : currentFiles){
+            if (!f.getName().equals("git")){
+                deleteRecursive (f);
+            }
+        }
+        BufferedReader treeFinder = new BufferedReader (new FileReader ("./git/objects/" + commitHash));
+        BufferedReader br = new BufferedReader (new FileReader ("./git/objects/" + treeFinder.readLine().split(" ") [1]));
+        while (br.ready()){
+            String [] currentFileInfo = br.readLine().split(" ");
+            makeFile(currentFileInfo);
+        }
     }
 
+    private void makeFile(String[] currentFileInfo) throws IOException {
+        if (currentFileInfo [0].equals("blob")){
+            File newBlob = new File (currentFileInfo[2]);
+            newBlob.createNewFile();
+            BufferedReader br = new BufferedReader (new FileReader ("./git/objects" + currentFileInfo[1]));
+            BufferedWriter bw = new BufferedWriter (new FileWriter (newBlob));
+            while (br.ready()){
+                bw.write (br.read());
+            }
+            br.close();
+            bw.close();
+        }
+        else{
+            File newTree = new File (currentFileInfo[2]);
+            newTree.mkdirs();
+            BufferedReader br = new BufferedReader (new FileReader ("./git/objects" + currentFileInfo[1]));
+            while (br.ready()){
+                makeFile(br.readLine().split(" "));
+            }
+            br.close();
+        }
+    }
+
+    private static void deleteRecursive (File file){
+        if (!file.isDirectory()){
+            file.delete();
+        }
+        else{
+            File [] files = file.listFiles();
+            for (File f : files){
+                deleteRecursive(f);
+                f.delete();
+            }
+            file.delete();
+        }
+    }
     //Tests main methods
     private static void testRepoInit() {
         //Testing file creation

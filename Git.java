@@ -4,7 +4,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.nio.charset.StandardCharsets;
-public class Git {
+public class Git implements GitInterface{
     public static void initGitRepo () {
         int pathExistsCounter=0;
         //Creates the "git" directory
